@@ -1,0 +1,217 @@
+<!-- ABOUTME: Landing page for RN Games — leaderboard and game tiles. -->
+<!-- ABOUTME: Plain HTML; data loaded from Supabase via app.js. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RN Games</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>RN Games</h1>
+    <p class="subtitle">Reid vs. Nianci</p>
+  </header>
+
+  <main>
+
+    <!-- ── Leaderboard ── -->
+    <section id="leaderboard">
+      <h2>Today's Leaderboard <span id="leaderboard-date"></span></h2>
+      <table id="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Game</th>
+            <th class="player-col reid">Reid</th>
+            <th class="player-col nianci">Nianci</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr id="leaderboard-loading">
+            <td colspan="4">Loading…</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr id="leaderboard-totals">
+            <td><strong>Overall</strong></td>
+            <td id="reid-wins" class="player-col reid">—</td>
+            <td id="nianci-wins" class="player-col nianci">—</td>
+            <td id="overall-result">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <!-- ── Game tiles ── -->
+    <section id="games">
+      <h2>Games</h2>
+      <div id="game-grid">
+
+        <div class="game-tile" data-game="redactle">
+          <div class="tile-header">
+            <h3>Redactle</h3>
+            <span class="difficulty">Medium</span>
+          </div>
+          <p class="tile-desc">Daily — guess the Wikipedia article from redacted text</p>
+          <div class="tile-scores">
+            <div class="player-score reid">
+              <span class="player-label">Reid</span>
+              <span class="score-val" data-player="reid">—</span>
+            </div>
+            <div class="player-score nianci">
+              <span class="player-label">Nianci</span>
+              <span class="score-val" data-player="nianci">—</span>
+            </div>
+          </div>
+          <div class="tile-actions">
+            <a href="https://redactle.net/" target="_blank" class="btn-play">Play</a>
+            <button class="btn-log" onclick="openModal('redactle')">Log Score</button>
+          </div>
+        </div>
+
+        <div class="game-tile" data-game="connections">
+          <div class="tile-header">
+            <h3>Connections</h3>
+            <span class="difficulty">NYT</span>
+          </div>
+          <p class="tile-desc">Daily — group 16 words into 4 categories</p>
+          <div class="tile-scores">
+            <div class="player-score reid">
+              <span class="player-label">Reid</span>
+              <span class="score-val" data-player="reid">—</span>
+            </div>
+            <div class="player-score nianci">
+              <span class="player-label">Nianci</span>
+              <span class="score-val" data-player="nianci">—</span>
+            </div>
+          </div>
+          <div class="tile-actions">
+            <a href="https://www.nytimes.com/games/connections" target="_blank" class="btn-play">Play</a>
+            <button class="btn-log" onclick="openModal('connections')">Log Score</button>
+          </div>
+        </div>
+
+        <div class="game-tile" data-game="flickle">
+          <div class="tile-header">
+            <h3>Flickle</h3>
+            <span class="difficulty">Daily</span>
+          </div>
+          <p class="tile-desc">Daily — guess the movie from screenshots</p>
+          <div class="tile-scores">
+            <div class="player-score reid">
+              <span class="player-label">Reid</span>
+              <span class="score-val" data-player="reid">—</span>
+            </div>
+            <div class="player-score nianci">
+              <span class="player-label">Nianci</span>
+              <span class="score-val" data-player="nianci">—</span>
+            </div>
+          </div>
+          <div class="tile-actions">
+            <a href="https://flickle.app/" target="_blank" class="btn-play">Play</a>
+            <button class="btn-log" onclick="openModal('flickle')">Log Score</button>
+          </div>
+        </div>
+
+        <div class="game-tile" data-game="mini">
+          <div class="tile-header">
+            <h3>Mini Crossword</h3>
+            <span class="difficulty">LA Times</span>
+          </div>
+          <p class="tile-desc">Daily — quick 5×5 crossword</p>
+          <div class="tile-scores">
+            <div class="player-score reid">
+              <span class="player-label">Reid</span>
+              <span class="score-val" data-player="reid">—</span>
+            </div>
+            <div class="player-score nianci">
+              <span class="player-label">Nianci</span>
+              <span class="score-val" data-player="nianci">—</span>
+            </div>
+          </div>
+          <div class="tile-actions">
+            <a href="https://www.latimes.com/games/mini-crossword" target="_blank" class="btn-play">Play</a>
+            <button class="btn-log" onclick="openModal('mini')">Log Score</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Score entry modal ── -->
+  <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
+    <div id="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2 id="modal-title">Log Score</h2>
+
+      <form id="score-form" onsubmit="submitScore(event)">
+
+        <!-- Player selection -->
+        <fieldset>
+          <legend>Player</legend>
+          <label class="radio-label reid">
+            <input type="radio" name="player" value="reid" required />
+            Reid
+          </label>
+          <label class="radio-label nianci">
+            <input type="radio" name="player" value="nianci" required />
+            Nianci
+          </label>
+        </fieldset>
+
+        <!-- Date (defaults to today) -->
+        <label>
+          Date
+          <input type="date" id="score-date" name="date" required />
+        </label>
+
+        <!-- Time (all games) -->
+        <label id="time-field">
+          Time (mm:ss)
+          <input type="text" name="time" placeholder="4:32" pattern="\d{1,2}:\d{2}" />
+        </label>
+
+        <!-- Completed (connections, flickle) -->
+        <label id="completed-field" class="hidden">
+          <input type="checkbox" name="completed" checked />
+          Completed
+        </label>
+
+        <!-- Redactle fields -->
+        <div id="redactle-fields" class="hidden">
+          <label>
+            Words guessed
+            <input type="number" name="words_guessed" min="1" />
+          </label>
+          <label>
+            Hits
+            <input type="number" name="hits" min="0" />
+          </label>
+        </div>
+
+        <!-- Flickle fields -->
+        <div id="flickle-fields" class="hidden">
+          <label>
+            Guesses (1–6)
+            <input type="number" name="guesses" min="1" max="6" />
+          </label>
+        </div>
+
+        <div id="form-error" class="error hidden"></div>
+
+        <button type="submit" class="btn-submit">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

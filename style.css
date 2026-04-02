@@ -1,0 +1,313 @@
+/* ABOUTME: Styles for RN Games — layout, leaderboard, game tiles, and modal. */
+/* ABOUTME: Mobile-first; uses CSS custom properties for player color theming. */
+
+:root {
+  --reid:   #3b82f6;
+  --nianci: #ec4899;
+  --bg:     #f8fafc;
+  --surface:#ffffff;
+  --border: #e2e8f0;
+  --text:   #1e293b;
+  --muted:  #64748b;
+  --radius: 12px;
+  --win-bg: #f0fdf4;
+  --win-color: #16a34a;
+  --loss-bg: #fef2f2;
+  --loss-color: #dc2626;
+  --tie-bg: #fefce8;
+  --tie-color: #ca8a04;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  text-align: center;
+}
+header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
+header .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.2rem; }
+
+/* ── Main layout ── */
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+#leaderboard-date {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ── Leaderboard table ── */
+#leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+#leaderboard-table th,
+#leaderboard-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+#leaderboard-table tfoot td {
+  border-bottom: none;
+  font-size: 0.9rem;
+  background: var(--bg);
+}
+#leaderboard-table thead th {
+  background: var(--bg);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.player-col.reid   { color: var(--reid); }
+.player-col.nianci { color: var(--nianci); }
+
+.result-win  { color: var(--win-color);  background: var(--win-bg);  padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+.result-loss { color: var(--loss-color); background: var(--loss-bg); padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+.result-tie  { color: var(--tie-color);  background: var(--tie-bg);  padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+.result-pending { color: var(--muted); font-size: 0.85rem; }
+
+/* ── Game grid ── */
+#game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.game-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  transition: box-shadow 0.15s;
+}
+.game-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+
+.tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.tile-header h3 { font-size: 1rem; font-weight: 700; }
+.difficulty {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+}
+
+.tile-desc { font-size: 0.8rem; color: var(--muted); }
+
+.tile-scores {
+  display: flex;
+  gap: 0.75rem;
+}
+.player-score {
+  flex: 1;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.player-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.player-score.reid   .player-label { color: var(--reid); }
+.player-score.nianci .player-label { color: var(--nianci); }
+.score-val { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+
+.tile-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.btn-play, .btn-log {
+  flex: 1;
+  padding: 0.45rem 0;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  transition: opacity 0.15s;
+}
+.btn-play {
+  background: var(--text);
+  color: #fff;
+}
+.btn-log {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-play:hover, .btn-log:hover { opacity: 0.8; }
+
+/* ── Modal ── */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+#modal-overlay.hidden { display: none; }
+
+#modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+#modal h2 { font-size: 1.2rem; }
+
+#score-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+#score-form fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  gap: 1.5rem;
+}
+#score-form legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0 0.25rem;
+}
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.radio-label.reid   { color: var(--reid); }
+.radio-label.nianci { color: var(--nianci); }
+
+#score-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+#score-form label input[type="text"],
+#score-form label input[type="number"],
+#score-form label input[type="date"] {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  width: 100%;
+}
+#score-form label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+label#completed-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+}
+
+#redactle-fields, #flickle-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-submit {
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+.btn-submit:hover { opacity: 0.85; }
+
+.error {
+  color: var(--loss-color);
+  font-size: 0.85rem;
+  background: var(--loss-bg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+
+.hidden { display: none !important; }
