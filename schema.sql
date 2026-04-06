@@ -33,15 +33,15 @@ CREATE TABLE players (
 -- One score row per player per game per day.
 CREATE TABLE scores (
   id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  game_id      TEXT NOT NULL REFERENCES games(id),
-  player_id    TEXT NOT NULL REFERENCES players(id),
+  game         TEXT NOT NULL REFERENCES games(id),
+  player       TEXT NOT NULL REFERENCES players(id),
   played_date  DATE NOT NULL DEFAULT CURRENT_DATE,
   time_seconds INTEGER,
   completed    BOOLEAN NOT NULL DEFAULT true,
   -- Game-specific fields (e.g. words_guessed, hits, guesses, mistakes)
   details      JSONB,
   created_at   TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE (game_id, player_id, played_date)
+  UNIQUE (game, player, played_date)
 );
 
 -- ── Seed data ─────────────────────────────────────────────────────────────────
@@ -78,10 +78,12 @@ INSERT INTO games (id, name, description, url, embeddable, difficulty_label, sor
   'NYT',
   2,
   '{
-    "has_time": true,
+    "has_time": false,
     "has_completion": true,
     "has_share_paste": true,
-    "extra_fields": []
+    "extra_fields": [
+      {"name": "mistakes", "label": "MISTAKES (0-4)", "input_type": "number", "min": 0, "max": 4}
+    ]
   }'
 ),
 (
@@ -93,7 +95,7 @@ INSERT INTO games (id, name, description, url, embeddable, difficulty_label, sor
   'DAILY',
   3,
   '{
-    "has_time": true,
+    "has_time": false,
     "has_completion": true,
     "has_share_paste": true,
     "extra_fields": [
@@ -112,7 +114,7 @@ INSERT INTO games (id, name, description, url, embeddable, difficulty_label, sor
   '{
     "has_time": true,
     "has_completion": false,
-    "has_share_paste": false,
+    "has_share_paste": true,
     "extra_fields": []
   }'
 );

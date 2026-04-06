@@ -24,7 +24,12 @@ const GAME_FALLBACK = [
     description: 'Group 16 words into 4 categories',
     url: 'https://www.nytimes.com/games/connections', embeddable: false,
     difficulty_label: 'NYT', sort_order: 2,
-    ui_config: { has_time: true, has_completion: true, has_share_paste: true, extra_fields: [] },
+    ui_config: {
+      has_time: false, has_completion: true, has_share_paste: true,
+      extra_fields: [
+        { name: 'mistakes', label: 'MISTAKES (0-4)', input_type: 'number', min: 0, max: 4 },
+      ],
+    },
   },
   {
     id: 'flickle', name: 'Flickle',
@@ -32,7 +37,7 @@ const GAME_FALLBACK = [
     url: 'https://flickle.app/', embeddable: true,
     difficulty_label: 'DAILY', sort_order: 3,
     ui_config: {
-      has_time: true, has_completion: true, has_share_paste: true,
+      has_time: false, has_completion: true, has_share_paste: true,
       extra_fields: [
         { name: 'guesses', label: 'GUESSES (1-6)', input_type: 'number', min: 1, max: 6 },
       ],
@@ -43,7 +48,7 @@ const GAME_FALLBACK = [
     description: '5x5 daily crossword',
     url: 'https://www.latimes.com/games/mini-crossword', embeddable: false,
     difficulty_label: 'LA TIMES', sort_order: 4,
-    ui_config: { has_time: true, has_completion: false, has_share_paste: false, extra_fields: [] },
+    ui_config: { has_time: true, has_completion: false, has_share_paste: true, extra_fields: [] },
   },
 ];
 
@@ -74,7 +79,7 @@ let db = null;
 try {
   db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch (e) {
-  console.warn('Supabase not configured — running in demo mode.');
+  console.error('Supabase init failed:', e.message, '| URL:', SUPABASE_URL?.slice(0, 30));
 }
 
 // ── Pixel art sprites ─────────────────────────────────────────────────────────
@@ -433,9 +438,8 @@ async function loadToday() {
   const byGame = {};
   for (const game of GAME_CONFIG) byGame[game.id] = {};
   for (const row of data) {
-    // scores table uses game_id / player_id in new schema
-    const gid = row.game_id ?? row.game;
-    const pid = row.player_id ?? row.player;
+    const gid = row.game;
+    const pid = row.player;
     if (byGame[gid]) byGame[gid][pid] = row;
   }
 
@@ -447,17 +451,18 @@ async function loadToday() {
 
 let activeOverlayGame = null;
 
-function openGame(game) {
-  const url = GAME_URLS[game];
-  activeOverlayGame = game;
+function openGame(gameId) {
+  const gameCfg = GAME_CONFIG.find(g => g.id === gameId);
+  const url = gameCfg?.url;
+  activeOverlayGame = gameId;
 
-  document.getElementById('game-overlay-title').textContent = GAME_LABELS[game];
+  document.getElementById('game-overlay-title').textContent = gameCfg?.name?.toUpperCase() ?? gameId;
   document.getElementById('game-overlay-external').href = url;
   document.getElementById('blocked-link').href = url;
-  document.getElementById('game-overlay-log').onclick = () => openModal(game);
+  document.getElementById('game-overlay-log').onclick = () => openModal(gameId);
   document.getElementById('game-overlay').classList.remove('hidden');
 
-  if (!GAME_EMBEDDABLE[game]) {
+  if (!gameCfg?.embeddable) {
     // Known non-embeddable — skip the iframe entirely.
     document.getElementById('game-frame').classList.add('hidden');
     document.getElementById('game-blocked').classList.remove('hidden');
@@ -542,15 +547,20 @@ function parseConnections(text) {
 }
 
 function parseFlickle(text) {
-  // Share format: "#Flickle #N 🎬[squares]…" where 🟥=wrong 🟩=correct ⬜=unused
-  const match = text.match(/🎬([🟥🟩⬜\s]+)/u);
+  // Share format: "#Flickle #N\n🎬[squares]" where ⬛=skipped 🟥=wrong 🟩=correct ❌=loss
+  if (text.includes('❌')) return { completed: false };
+  const match = text.match(/🎬([⬛🟥🟩]+)/u);
   if (!match) return {};
-
-  const squares = [...match[1]].filter(c => '🟥🟩⬜'.includes(c));
-  const greenIdx = squares.indexOf('🟩');
-
-  if (greenIdx === -1) return { completed: false, guesses: squares.filter(c => c === '🟥').length || 6 };
+  const squares = [...match[1]];
+  const greenIdx = squares.findIndex(c => c === '🟩');
+  if (greenIdx === -1) return {};
   return { completed: true, guesses: greenIdx + 1 };
+}
+function parseMini(text) {
+  // Share format: "Score\n259\nTime\n03:10"
+  const match = text.match(/Time\s+(\d{1,2}):(\d{2})/i);
+  if (!match) return {};
+  return { completed: true, time_seconds: parseInt(match[1], 10) * 60 + parseInt(match[2], 10) };
 }
 
 function parseShareText(game, text) {
@@ -559,6 +569,7 @@ function parseShareText(game, text) {
     case 'redactle':    return parseRedactle(text);
     case 'connections': return parseConnections(text);
     case 'flickle':     return parseFlickle(text);
+    case 'mini':        return parseMini(text);
     default:            return {};
   }
 }
@@ -598,9 +609,8 @@ function applyParsed(game, parsed) {
   }
 
   if (game === 'connections' && parsed.mistakes != null) {
+    if (form.mistakes) form.mistakes.value = parsed.mistakes;
     lines.push(`MISTAKES: ${parsed.mistakes}`);
-    // Store mistakes for saving in details
-    form.dataset.mistakes = parsed.mistakes;
   }
 
   if (game === 'flickle' && parsed.guesses != null) {
@@ -685,13 +695,12 @@ async function submitScore(event) {
   const player  = form.player.value;
   const date    = form.date.value;
   const timeRaw = form.time.value.trim();
-  const game    = activeGame;
 
   localStorage.setItem('rngame-player', player);
 
   const game = GAME_CONFIG.find(g => g.id === activeGame);
   const cfg  = game?.ui_config ?? {};
-  const row  = { game_id: activeGame, player_id: player, played_date: date, completed: true };
+  const row  = { game: activeGame, player: player, played_date: date, completed: true };
 
   if (timeRaw) {
     const secs = parseTime(timeRaw);
@@ -703,15 +712,11 @@ async function submitScore(event) {
 
   // Collect extra fields into details
   const extraFields = cfg.extra_fields ?? [];
-  if (extraFields.length > 0 || form.dataset.mistakes != null) {
+  if (extraFields.length > 0) {
     row.details = {};
     for (const field of extraFields) {
       const val = form[field.name]?.value;
       if (val != null && val !== '') row.details[field.name] = Number(val);
-    }
-    // Mistakes parsed from share text (connections)
-    if (form.dataset.mistakes != null) {
-      row.details.mistakes = parseInt(form.dataset.mistakes, 10);
     }
   }
 
