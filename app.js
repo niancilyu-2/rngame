@@ -15,7 +15,6 @@ const GAME_FALLBACK = [
       has_time: true, has_completion: false, has_share_paste: true,
       extra_fields: [
         { name: 'words_guessed', label: 'WORDS GUESSED', input_type: 'number', min: 1 },
-        { name: 'hits',          label: 'HITS',          input_type: 'number', min: 0 },
       ],
     },
   },
@@ -57,8 +56,8 @@ const GAME_FALLBACK = [
 // type: 'lower' (lower wins), 'higher' (higher wins), 'true' (true beats false)
 const WIN_RULES = {
   redactle: [
-    { type: 'lower',  get: r => r.time_seconds },
-    { type: 'higher', get: r => r.details?.hits / (r.details?.words_guessed || 1) },
+    { type: 'lower', get: r => r.details?.words_guessed },
+    { type: 'lower', get: r => r.time_seconds },
   ],
   connections: [
     { type: 'true',  get: r => r.completed },
@@ -250,12 +249,8 @@ function scoreSummary(row) {
   if (!row) return '—';
   const parts = [];
   if (row.time_seconds != null) parts.push(fmtTime(row.time_seconds));
-  if (row.game === 'redactle' && row.details) {
-    const { words_guessed, hits } = row.details;
-    if (words_guessed != null && hits != null) {
-      const pct = Math.round((hits / words_guessed) * 100);
-      parts.push(`${hits}/${words_guessed} (${pct}%)`);
-    }
+  if (row.game === 'redactle' && row.details?.words_guessed != null) {
+    parts.push(`${row.details.words_guessed} guesses`);
   }
   if (row.game === 'connections' && row.details?.mistakes != null) {
     parts.push(`${row.details.mistakes} err`);
@@ -509,24 +504,22 @@ function closeGame(event) {
 // Unrecognised share text returns {}.
 
 function parseRedactle(text) {
-  // Share format: "Redactle #N X/Y (Z%)" where X=hits, Y=total guesses, Z=accuracy
+  // Share format: "I cracked Redactle #N in M guesses! 🎲 M | … ⏱️ Xs"
   const out = {};
 
-  const fractionMatch = text.match(/(\d+)\/(\d+)/);
-  if (fractionMatch) {
-    out.hits          = parseInt(fractionMatch[1], 10);
-    out.words_guessed = parseInt(fractionMatch[2], 10);
-  }
+  out.completed = /cracked/i.test(text);
 
-  // Accuracy % can let us derive hits even if fraction is absent
-  const pctMatch = text.match(/([\d.]+)%/);
-  if (pctMatch && out.words_guessed && !fractionMatch) {
-    out.hits = Math.round(out.words_guessed * parseFloat(pctMatch[1]) / 100);
-  }
+  const guessMatch = text.match(/🎲\s*(\d+)/u);
+  if (guessMatch) out.words_guessed = parseInt(guessMatch[1], 10);
 
-  // Time might appear as mm:ss even though it's not in standard share
-  const timeMatch = text.match(/\b(\d{1,2}):(\d{2})\b/);
-  if (timeMatch) out.time_seconds = parseInt(timeMatch[1], 10) * 60 + parseInt(timeMatch[2], 10);
+  // Time as raw seconds (⏱️ 14s) or MM:SS
+  const secMatch = text.match(/⏱️\s*(\d+)s/u);
+  if (secMatch) {
+    out.time_seconds = parseInt(secMatch[1], 10);
+  } else {
+    const mmss = text.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (mmss) out.time_seconds = parseInt(mmss[1], 10) * 60 + parseInt(mmss[2], 10);
+  }
 
   return out;
 }
@@ -597,15 +590,9 @@ function applyParsed(game, parsed) {
     lines.push(`COMPLETED: ${parsed.completed ? 'YES' : 'NO'}`);
   }
 
-  if (game === 'redactle') {
-    if (parsed.words_guessed != null) {
-      form.words_guessed.value = parsed.words_guessed;
-      lines.push(`WORDS GUESSED: ${parsed.words_guessed}`);
-    }
-    if (parsed.hits != null) {
-      form.hits.value = parsed.hits;
-      lines.push(`HITS: ${parsed.hits}`);
-    }
+  if (game === 'redactle' && parsed.words_guessed != null) {
+    form.words_guessed.value = parsed.words_guessed;
+    lines.push(`WORDS GUESSED: ${parsed.words_guessed}`);
   }
 
   if (game === 'connections' && parsed.mistakes != null) {
@@ -721,10 +708,8 @@ async function submitScore(event) {
   }
 
   // Redactle validation
-  if (activeGame === 'redactle' && row.details) {
-    const { words_guessed: wg, hits: h } = row.details;
-    if (wg == null || h == null) { showError(errEl, 'WORDS GUESSED + HITS REQUIRED'); return; }
-    if (h > wg) { showError(errEl, 'HITS CANNOT EXCEED WORDS GUESSED'); return; }
+  if (activeGame === 'redactle' && !row.details?.words_guessed) {
+    showError(errEl, 'WORDS GUESSED REQUIRED'); return;
   }
 
   if (!db) { showError(errEl, 'SUPABASE NOT CONFIGURED'); return; }

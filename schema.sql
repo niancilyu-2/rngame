@@ -64,8 +64,7 @@ INSERT INTO games (id, name, description, url, embeddable, difficulty_label, sor
     "has_completion": false,
     "has_share_paste": true,
     "extra_fields": [
-      {"name": "words_guessed", "label": "WORDS GUESSED", "input_type": "number", "min": 1},
-      {"name": "hits",          "label": "HITS",          "input_type": "number", "min": 0}
+      {"name": "words_guessed", "label": "WORDS GUESSED", "input_type": "number", "min": 1}
     ]
   }'
 ),
