@@ -89,7 +89,6 @@ const REID_PALETTE = {
   'H': '#5c3317', 'h': '#7a4828',  // brown hair
   'S': '#f5c5a3', 's': '#e8aa88',  // skin
   'W': '#f0f0f0', 'w': '#d0d0d0',  // white gi
-  'R': '#cc2200',                   // red headband
   'B': '#1a1a2a', 'b': '#3a3a4a',  // dark / belt
   '.': null,
 };
@@ -100,7 +99,7 @@ const REID_F1 = [
   '...HhhhhhhhH....',
   '..HhSSSSSSsH....',
   '..HhSBSSBSsH....',
-  '..RRRRRRRRRR....',
+  '...hSSSSSSh.....',
   '...hSSSSSSh.....',
   '..WWWsSSsWWW....',
   '.WWWWWWWWWWWW...',
@@ -120,7 +119,7 @@ const REID_F2 = [
   '...HhhhhhhhH....',
   '..HhSSSSSSsH....',
   '..HhSBSSBSsH....',
-  '..RRRRRRRRRR....',
+  '...hSSSSSSh.....',
   '...hSSSSSSh.....',
   '.WWWWsSSsWWWW...',
   'WWWWWWWWWWWWwW..',
@@ -137,8 +136,7 @@ const REID_F2 = [
 const NIANCI_PALETTE = {
   'K': '#111111', 'k': '#2a2a2a',  // black hair
   'S': '#f0e0d0', 's': '#d8c4b0',  // pale skin
-  'B': '#111133', 'b': '#1a1a55',  // dark blue outfit
-  'G': '#d4a800',                   // gold ornament
+  'B': '#cc3388', 'b': '#881155',  // pink outfit
   'E': '#111111',                   // eyes
   'L': '#cc0044',                   // lips
   '.': null,
@@ -147,12 +145,12 @@ const NIANCI_PALETTE = {
 // Frame 1: neutral stance
 const NIANCI_F1 = [
   '....KKKKKKKK....',
-  '...KKkkkkkKK....',
-  '..GKKkkkkkKKG...',
-  '...KSSSSSSsK....',
-  '...KSESSESsK....',
-  '....SSSSSSs.....',
-  '....sSSLSSs.....',
+  '...KKkkkkkKKK...',
+  '..KKKkkkkkKKKK..',
+  '..KKSSSSSSsKK...',
+  '..KKSESSESsKK...',
+  '..KKSSSSSSsKK...',
+  '..KKsSSLSSsKK...',
   '...BbbbbbbbB....',
   '..BBBbbbbbBBB...',
   '.BBBBbBbBbBBBB..',
@@ -167,12 +165,12 @@ const NIANCI_F1 = [
 // Frame 2: ready stance (shoulders back, fists raised)
 const NIANCI_F2 = [
   '....KKKKKKKK....',
-  '...KKkkkkkKK....',
-  '..GKKkkkkkKKG...',
-  '...KSSSSSSsK....',
-  '...KSESSESsK....',
-  '....SSSSSSs.....',
-  '....sSSLSSs.....',
+  '...KKkkkkkKKK...',
+  '..KKKkkkkkKKKK..',
+  '..KKSSSSSSsKK...',
+  '..KKSESSESsKK...',
+  '..KKSSSSSSsKK...',
+  '..KKsSSLSSsKK...',
   '..BBbbbbbbbBB...',
   '.BBBBbbbbbBBBB..',
   'BBBBBbBbBbBBBBB.',
@@ -374,11 +372,14 @@ function renderTileScores(scoresByGame) {
   for (const game of GAME_CONFIG) {
     const tile = document.querySelector(`.game-tile[data-game="${game.id}"]`);
     if (!tile) continue;
+    let anyPlayed = false;
     for (const player of ['reid', 'nianci']) {
       const el  = tile.querySelector(`.score-val[data-player="${player}"]`);
       const row = scoresByGame[game.id]?.[player];
       if (el) el.textContent = scoreSummary(row);
+      if (row) anyPlayed = true;
     }
+    tile.querySelector('.btn-play').classList.toggle('played', anyPlayed);
   }
 }
 
@@ -504,21 +505,25 @@ function closeGame(event) {
 // Unrecognised share text returns {}.
 
 function parseRedactle(text) {
-  // Share format: "I cracked Redactle #N in M guesses! 🎲 M | … ⏱️ Xs"
+  // Format A: "I cracked Redactle #N in M guesses! 🎲 M | … ⏱️ Xs"
+  // Format B: "37 guesses\n67.6% accuracy\n12m duration"
   const out = {};
 
   out.completed = /cracked/i.test(text);
 
-  const guessMatch = text.match(/🎲\s*(\d+)/u);
+  const guessMatch = text.match(/🎲\s*(\d+)/u) ?? text.match(/(\d+)\s+guesses?/i);
   if (guessMatch) out.words_guessed = parseInt(guessMatch[1], 10);
 
-  // Time as raw seconds (⏱️ 14s) or MM:SS
-  const secMatch = text.match(/⏱️\s*(\d+)s/u);
+  // Time: ⏱️ 14s  |  MM:SS  |  12m duration  |  1h 12m duration
+  const secMatch  = text.match(/⏱️\s*(\d+)s/u);
+  const mmssMatch = text.match(/\b(\d{1,2}):(\d{2})\b/);
+  const durMatch  = text.match(/(?:(\d+)h\s*)?(\d+)m\s+duration/i);
   if (secMatch) {
     out.time_seconds = parseInt(secMatch[1], 10);
-  } else {
-    const mmss = text.match(/\b(\d{1,2}):(\d{2})\b/);
-    if (mmss) out.time_seconds = parseInt(mmss[1], 10) * 60 + parseInt(mmss[2], 10);
+  } else if (mmssMatch) {
+    out.time_seconds = parseInt(mmssMatch[1], 10) * 60 + parseInt(mmssMatch[2], 10);
+  } else if (durMatch) {
+    out.time_seconds = (parseInt(durMatch[1] ?? 0, 10) * 60 + parseInt(durMatch[2], 10)) * 60;
   }
 
   return out;

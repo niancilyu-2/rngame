@@ -258,8 +258,10 @@ section h2 {
   transition: background 0.1s, color 0.1s;
   text-align: center;
 }
-.btn-play { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
-.btn-play:hover { background: transparent; color: var(--yellow); }
+.btn-play { background: var(--nianci); color: var(--bg); border-color: var(--nianci); }
+.btn-play:hover { background: transparent; color: var(--nianci); }
+.btn-play.played { background: #aa8822; color: var(--bg); border-color: #aa8822; }
+.btn-play.played:hover { background: transparent; color: #aa8822; }
 .btn-log  { background: transparent; color: var(--muted); border-color: var(--border); }
 .btn-log:hover { border-color: var(--muted); color: var(--text); }
 
