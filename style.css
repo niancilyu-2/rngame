@@ -61,7 +61,7 @@ header {
   display: inline-block;
   white-space: nowrap;
   font-size: 0.48rem;
-  color: var(--yellow);
+  color: var(--muted);
   letter-spacing: 1px;
   animation: marquee 22s linear infinite;
 }
@@ -95,7 +95,7 @@ main {
 
 section h2 {
   font-size: 0.65rem;
-  color: var(--yellow);
+  color: var(--text);
   letter-spacing: 2px;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
@@ -125,7 +125,7 @@ section h2 {
 .player-name { font-size: 0.6rem; letter-spacing: 2px; }
 .player-card.reid   .player-name { color: var(--reid);   text-shadow: 0 0 8px var(--reid); }
 .player-card.nianci .player-name { color: var(--nianci); text-shadow: 0 0 8px var(--nianci); }
-.player-wins { font-size: 0.42rem; color: var(--yellow); }
+.player-wins { font-size: 0.42rem; color: var(--text); }
 
 .vs-badge {
   font-size: 1.1rem;
@@ -228,7 +228,7 @@ section h2 {
   padding: 0.2rem 0.4rem;
   letter-spacing: 1px;
 }
-.game-tile h3 { font-size: 0.65rem; color: var(--yellow); letter-spacing: 1px; }
+.game-tile h3 { font-size: 0.65rem; color: var(--text); letter-spacing: 1px; }
 .tile-desc { font-size: 0.4rem; color: var(--muted); line-height: 1.8; }
 
 .tile-scores { display: flex; gap: 0.5rem; }
@@ -299,7 +299,7 @@ section h2 {
   gap: 1rem;
   flex-wrap: wrap;
 }
-#game-overlay-title { font-size: 0.5rem; color: var(--yellow); letter-spacing: 2px; }
+#game-overlay-title { font-size: 0.5rem; color: var(--text); letter-spacing: 2px; }
 #game-overlay-actions { display: flex; gap: 0.5rem; align-items: center; }
 
 .btn-log-inline, .btn-external, .btn-close-overlay {
@@ -391,7 +391,7 @@ section h2 {
   color: var(--muted);
 }
 .modal-close:hover { color: var(--nianci); }
-#modal h2 { font-size: 0.6rem; color: var(--yellow); letter-spacing: 2px; }
+#modal h2 { font-size: 0.6rem; color: var(--text); letter-spacing: 2px; }
 
 #score-form { display: flex; flex-direction: column; gap: 1rem; }
 
