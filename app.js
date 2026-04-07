@@ -299,7 +299,6 @@ function buildGameTile(game, num) {
   el.innerHTML = `
     <div class="tile-top">
       <span class="tile-num">${String(num).padStart(2, '0')}</span>
-      <span class="tile-badge">${game.difficulty_label || ''}</span>
     </div>
     <h3>${game.name.toUpperCase()}</h3>
     <p class="tile-desc">${game.description}</p>
