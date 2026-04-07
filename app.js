@@ -443,6 +443,80 @@ async function loadToday() {
   renderTileScores(byGame);
 }
 
+async function loadHistory() {
+  if (!db) return;
+
+  const { data, error } = await db
+    .from('scores')
+    .select('*')
+    .order('played_date', { ascending: false });
+
+  if (error || !data) return;
+
+  // Group by date → game → player
+  const byDate = {};
+  for (const row of data) {
+    const d = row.played_date;
+    if (!byDate[d]) byDate[d] = {};
+    if (!byDate[d][row.game]) byDate[d][row.game] = {};
+    byDate[d][row.game][row.player] = row;
+  }
+
+  renderHistory(byDate);
+}
+
+function renderHistory(byDate) {
+  const tbody = document.getElementById('history-body');
+  tbody.innerHTML = '';
+
+  let reidDays = 0, nianciDays = 0;
+  const dates = Object.keys(byDate).sort().reverse();
+
+  for (const date of dates) {
+    const gameScores = byDate[date];
+    let reidWins = 0, nianciWins = 0;
+    const reidGames = [], nianciGames = [];
+
+    for (const game of GAME_CONFIG) {
+      const scores = gameScores[game.id];
+      if (!scores) continue;
+      const winner = determineWinner(game.id, scores.reid, scores.nianci);
+      if (winner === 'reid')   { reidWins++;   reidGames.push(game.name); }
+      if (winner === 'nianci') { nianciWins++; nianciGames.push(game.name); }
+    }
+
+    let dayWinner = null;
+    if (reidWins > nianciWins)        { dayWinner = 'reid';   reidDays++; }
+    else if (nianciWins > reidWins)   { dayWinner = 'nianci'; nianciDays++; }
+    else if (reidWins > 0)            { dayWinner = 'tie'; }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(date)}</td>
+      <td class="col-reid">${reidGames.join(', ') || '—'}</td>
+      <td class="col-nianci">${nianciGames.join(', ') || '—'}</td>
+      <td>${resultCell(dayWinner)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  if (dates.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">NO HISTORY YET</td></tr>';
+  }
+
+  const leader = reidDays > nianciDays ? 'reid'
+               : nianciDays > reidDays ? 'nianci'
+               : 'tie';
+  const totalsEl = document.getElementById('history-totals');
+  totalsEl.innerHTML = `
+    <span class="history-total ${leader === 'reid' ? 'leader' : ''}" style="color:var(--reid)">
+      REID <strong>${reidDays}</strong>
+    </span>
+    <span class="history-sep">—</span>
+    <span class="history-total ${leader === 'nianci' ? 'leader' : ''}" style="color:var(--nianci)">
+      <strong>${nianciDays}</strong> NIANCI
+    </span>`;
+}
+
 // ── Game iframe overlay ───────────────────────────────────────────────────────
 
 let activeOverlayGame = null;
@@ -741,4 +815,7 @@ function showError(el, msg) {
 initAvatars();
 // loadConfig runs first (renders tiles), then loadToday fills in scores.
 // Deferred so mock.js (loaded after this script) can override window.loadToday.
-loadConfig().then(() => setTimeout(() => window.loadToday(), 0));
+loadConfig().then(() => setTimeout(() => {
+  window.loadToday();
+  loadHistory();
+}, 0));

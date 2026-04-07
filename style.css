@@ -513,3 +513,24 @@ section h2 {
 }
 
 .hidden { display: none !important; }
+
+/* ── Cumulative history ── */
+#history { margin-top: 3rem; }
+
+#history-totals {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.7rem;
+}
+.history-total strong { font-size: 1rem; }
+.history-total.leader strong {
+  text-shadow: 0 0 10px currentColor;
+}
+.history-sep { color: var(--muted); }
+
+#history-table { width: 100%; }
+#history-table td { font-size: 0.38rem; padding: 0.5rem 0.6rem; }
+#history-table td:first-child { color: var(--muted); white-space: nowrap; }
