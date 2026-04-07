@@ -355,15 +355,18 @@ function renderLeaderboard(scoresByGame) {
   document.getElementById('nianci-wins').textContent = `${nianciWins} WIN${nianciWins !== 1 ? 'S' : ''}`;
 
   const banner = document.getElementById('overall-banner');
+  banner.className = '';
   if (reidWins === 0 && nianciWins === 0) {
-    banner.textContent = 'NO SCORES YET TODAY';
-    banner.style.color = 'var(--muted)';
+    banner.textContent = 'RESULT TBD';
   } else if (reidWins > nianciWins) {
-    banner.innerHTML = `<span style="color:var(--reid)">★ P1 REID LEADS ${reidWins}–${nianciWins} ★</span>`;
+    banner.textContent = `★ P1 REID LEADS ${reidWins}–${nianciWins} ★`;
+    banner.classList.add('winner-reid');
   } else if (nianciWins > reidWins) {
-    banner.innerHTML = `<span style="color:var(--nianci)">★ P2 NIANCI LEADS ${nianciWins}–${reidWins} ★</span>`;
+    banner.textContent = `★ P2 NIANCI LEADS ${nianciWins}–${reidWins} ★`;
+    banner.classList.add('winner-nianci');
   } else {
-    banner.innerHTML = `<span style="color:var(--yellow)">★ ALL TIED UP ${reidWins}–${nianciWins} ★</span>`;
+    banner.textContent = `★ ALL TIED UP ${reidWins}–${nianciWins} ★`;
+    banner.classList.add('winner-tie');
   }
 }
 
@@ -823,9 +826,27 @@ function showError(el, msg) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 initAvatars();
+// Clones the single marquee item until the total content exceeds
+// viewport + one span, then drives the animation by exactly one span's width.
+function initMarquee() {
+  const marquee = document.querySelector('.marquee');
+  const item    = document.querySelector('.mq-item');
+  if (!marquee || !item) return;
+
+  const itemW   = item.getBoundingClientRect().width;
+  const needed  = Math.ceil(window.innerWidth / itemW) + 2;
+  for (let i = 1; i < needed; i++) {
+    marquee.appendChild(item.cloneNode(true));
+  }
+
+  document.documentElement.style.setProperty('--mq-dist', `-${itemW}px`);
+}
+
 // loadConfig runs first (renders tiles), then loadToday fills in scores.
 // Deferred so mock.js (loaded after this script) can override window.loadToday.
 loadConfig().then(() => setTimeout(() => {
   window.loadToday();
   loadHistory();
 }, 0));
+
+initMarquee();

@@ -18,6 +18,18 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Custom cursors ── */
+body {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='24' shape-rendering='crispEdges'%3E%3Crect x='4' y='0' width='8' height='4' fill='%23ee1144'/%3E%3Crect x='20' y='0' width='8' height='4' fill='%23ee1144'/%3E%3Crect x='0' y='4' width='32' height='8' fill='%23ee1144'/%3E%3Crect x='4' y='12' width='24' height='4' fill='%23ee1144'/%3E%3Crect x='8' y='16' width='16' height='4' fill='%23ee1144'/%3E%3Crect x='12' y='20' width='8' height='4' fill='%23ee1144'/%3E%3C/svg%3E") 16 12, auto;
+}
+a, button, label, select,
+input[type="radio"], input[type="checkbox"],
+.game-tile, .btn-play, .btn-log, .btn-submit,
+.btn-log-inline, .btn-external, .btn-close-overlay,
+.btn-blocked-open, .modal-close, .radio-label {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='24' shape-rendering='crispEdges'%3E%3Crect x='4' y='0' width='8' height='4' fill='%23ffffff'/%3E%3Crect x='20' y='0' width='8' height='4' fill='%23ffffff'/%3E%3Crect x='0' y='4' width='32' height='8' fill='%23ffffff'/%3E%3Crect x='4' y='12' width='24' height='4' fill='%23ffffff'/%3E%3Crect x='8' y='16' width='16' height='4' fill='%23ffffff'/%3E%3Crect x='12' y='20' width='8' height='4' fill='%23ffffff'/%3E%3C/svg%3E") 16 12, pointer;
+}
+
 body {
   font-family: var(--font);
   background: var(--bg);
@@ -35,7 +47,7 @@ body {
 
 /* ── Animations ── */
 @keyframes blink      { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-@keyframes marquee    { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes marquee    { from{transform:translate3d(0,0,0)} to{transform:translate3d(var(--mq-dist,-50%),0,0)} }
 @keyframes glow-reid  { 0%,100%{filter:drop-shadow(0 0 6px var(--reid))} 50%{filter:drop-shadow(0 0 12px var(--reid))} }
 @keyframes glow-nianci{ 0%,100%{filter:drop-shadow(0 0 6px var(--nianci))} 50%{filter:drop-shadow(0 0 12px var(--nianci))} }
 
@@ -58,13 +70,16 @@ header {
   padding: 0.45rem 0;
 }
 .marquee {
-  display: inline-block;
-  white-space: nowrap;
+  display: inline-flex;
   font-size: 0.48rem;
   color: var(--muted);
   letter-spacing: 1px;
   animation: marquee 22s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
+.mq-item { white-space: nowrap; flex-shrink: 0; }
+.mq-num  { color: #777; }
 
 header h1 {
   font-size: clamp(1rem, 4vw, 2rem);
@@ -103,6 +118,29 @@ section h2 {
   border-bottom: 1px solid var(--border);
 }
 
+/* ── Leaderboard section panel ── */
+#leaderboard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+  padding: 1.75rem;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 60px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+#leaderboard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 40%, rgba(255,102,0,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 40%, rgba(34,204,102,0.07) 0%, transparent 55%);
+  pointer-events: none;
+}
+#leaderboard h2 {
+  position: relative;
+}
+
 /* ── Player cards ── */
 .leaderboard-players {
   display: flex;
@@ -110,6 +148,7 @@ section h2 {
   justify-content: center;
   gap: 2rem;
   margin-bottom: 2rem;
+  position: relative;
 }
 .player-card {
   display: flex;
@@ -183,11 +222,15 @@ section h2 {
   margin-top: 1rem;
   text-align: center;
   font-size: 0.55rem;
-  padding: 0.75rem;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--border);
   background: var(--surface2);
   letter-spacing: 2px;
+  position: relative;
 }
+#overall-banner.winner-reid   { border-color: var(--reid);   color: var(--reid);   text-shadow: 0 0 10px var(--reid); }
+#overall-banner.winner-nianci { border-color: var(--nianci); color: var(--nianci); text-shadow: 0 0 10px var(--nianci); }
+#overall-banner.winner-tie    { border-color: var(--yellow); color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
 .loading-cell { color: var(--muted); font-size: 0.48rem; padding: 1.5rem; }
 
 /* ── Game grid ── */
@@ -523,32 +566,61 @@ section h2 {
 .hidden { display: none !important; }
 
 /* ── Cumulative history arcade board ── */
+@keyframes score-pulse-reid   { 0%,100%{ text-shadow: 0 0 10px var(--reid),  0 0 30px rgba(255,102,0,0.3); } 50%{ text-shadow: 0 0 20px var(--reid),  0 0 50px rgba(255,102,0,0.5); } }
+@keyframes score-pulse-nianci { 0%,100%{ text-shadow: 0 0 10px var(--nianci),0 0 30px rgba(34,204,102,0.3); } 50%{ text-shadow: 0 0 20px var(--nianci),0 0 50px rgba(34,204,102,0.5); } }
+
+#history {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+  padding: 1.75rem;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 60px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+#history::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 30%, rgba(255,102,0,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 30%, rgba(34,204,102,0.07) 0%, transparent 50%);
+  pointer-events: none;
+}
+#history h2 { position: relative; }
+
 #history-totals {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  gap: 0;
+  margin-bottom: 1.5rem;
 }
 .htotal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   font-size: 0.45rem;
   letter-spacing: 2px;
+  padding: 2rem 3rem;
+  flex: 1;
 }
 .htotal.reid   { color: var(--reid); }
 .htotal.nianci { color: var(--nianci); }
 .htotal-num {
-  font-size: 1.6rem;
+  font-size: 2.8rem;
   line-height: 1;
 }
-.htotal.leader .htotal-num { text-shadow: 0 0 14px currentColor; }
-.htotal-vs { font-size: 0.45rem; color: var(--muted); letter-spacing: 3px; }
+.htotal.leader.reid   .htotal-num { animation: score-pulse-reid   2s ease-in-out infinite; }
+.htotal.leader.nianci .htotal-num { animation: score-pulse-nianci 2s ease-in-out infinite; }
+.htotal-vs {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 4px;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
 
 .hist-head, .hist-row {
   display: grid;
@@ -576,7 +648,7 @@ section h2 {
   height: 300px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--bg);
   position: relative;
 }
 #history-scroll::before, #history-scroll::after {
@@ -587,8 +659,8 @@ section h2 {
   z-index: 1;
   pointer-events: none;
 }
-#history-scroll::before { top: 0;    background: linear-gradient(var(--surface), transparent); }
-#history-scroll::after  { bottom: 0; background: linear-gradient(transparent, var(--surface)); }
+#history-scroll::before { top: 0;    background: linear-gradient(var(--bg), transparent); }
+#history-scroll::after  { bottom: 0; background: linear-gradient(transparent, var(--bg)); }
 #history-ticker.scrolling { animation: arcade-roll linear infinite; }
 #history-scroll:hover #history-ticker { animation-play-state: paused; }
 @keyframes arcade-roll {
