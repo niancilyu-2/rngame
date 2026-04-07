@@ -466,13 +466,15 @@ async function loadHistory() {
 }
 
 function renderHistory(byDate) {
-  const tbody = document.getElementById('history-body');
-  tbody.innerHTML = '';
+  const ticker = document.getElementById('history-ticker');
+  ticker.innerHTML = '';
+  ticker.classList.remove('scrolling');
 
   let reidDays = 0, nianciDays = 0;
   const dates = Object.keys(byDate).sort().reverse();
+  const rowEls = [];
 
-  for (const date of dates) {
+  dates.forEach((date, i) => {
     const gameScores = byDate[date];
     let reidWins = 0, nianciWins = 0;
     const reidGames = [], nianciGames = [];
@@ -486,35 +488,44 @@ function renderHistory(byDate) {
     }
 
     let dayWinner = null;
-    if (reidWins > nianciWins)        { dayWinner = 'reid';   reidDays++; }
-    else if (nianciWins > reidWins)   { dayWinner = 'nianci'; nianciDays++; }
-    else if (reidWins > 0)            { dayWinner = 'tie'; }
+    if (reidWins > nianciWins)      { dayWinner = 'reid';   reidDays++; }
+    else if (nianciWins > reidWins) { dayWinner = 'nianci'; nianciDays++; }
+    else if (reidWins > 0)          { dayWinner = 'tie'; }
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${formatDate(date)}</td>
-      <td class="col-reid">${reidGames.join(', ') || '—'}</td>
-      <td class="col-nianci">${nianciGames.join(', ') || '—'}</td>
-      <td>${resultCell(dayWinner)}</td>`;
-    tbody.appendChild(tr);
-  }
+    const div = document.createElement('div');
+    div.className = `hist-row${dayWinner ? ' hist-' + dayWinner : ''}`;
+    div.innerHTML = `
+      <span class="hist-rank">${String(i + 1).padStart(2, '0')}</span>
+      <span class="hist-date">${formatDate(date)}</span>
+      <span class="hist-games col-reid">${reidGames.join(' · ') || '—'}</span>
+      <span class="hist-games col-nianci">${nianciGames.join(' · ') || '—'}</span>
+      <span class="hist-day">${resultCell(dayWinner)}</span>`;
+    rowEls.push(div);
+    ticker.appendChild(div);
+  });
 
-  if (dates.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">NO HISTORY YET</td></tr>';
+  if (rowEls.length === 0) {
+    ticker.innerHTML = '<div class="loading-cell">NO HISTORY YET</div>';
+  } else if (rowEls.length > 4) {
+    // Duplicate rows for seamless infinite scroll
+    rowEls.forEach(r => ticker.appendChild(r.cloneNode(true)));
+    ticker.style.animationDuration = `${rowEls.length * 2.5}s`;
+    ticker.classList.add('scrolling');
   }
 
   const leader = reidDays > nianciDays ? 'reid'
                : nianciDays > reidDays ? 'nianci'
                : 'tie';
-  const totalsEl = document.getElementById('history-totals');
-  totalsEl.innerHTML = `
-    <span class="history-total ${leader === 'reid' ? 'leader' : ''}" style="color:var(--reid)">
-      REID <strong>${reidDays}</strong>
-    </span>
-    <span class="history-sep">—</span>
-    <span class="history-total ${leader === 'nianci' ? 'leader' : ''}" style="color:var(--nianci)">
-      <strong>${nianciDays}</strong> NIANCI
-    </span>`;
+  document.getElementById('history-totals').innerHTML = `
+    <div class="htotal reid ${leader === 'reid' ? 'leader' : ''}">
+      <span class="htotal-name">REID</span>
+      <span class="htotal-num">${reidDays}</span>
+    </div>
+    <div class="htotal-vs">VS</div>
+    <div class="htotal nianci ${leader === 'nianci' ? 'leader' : ''}">
+      <span class="htotal-num">${nianciDays}</span>
+      <span class="htotal-name">NIANCI</span>
+    </div>`;
 }
 
 // ── Game iframe overlay ───────────────────────────────────────────────────────

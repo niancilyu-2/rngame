@@ -84,21 +84,20 @@
 
     <!-- ── Cumulative history ── -->
     <section id="history">
-      <h2>▶ ALL TIME</h2>
+      <h2>▶ HIGH SCORES</h2>
       <div id="history-totals"></div>
-      <table id="history-table">
-        <thead>
-          <tr>
-            <th>DATE</th>
-            <th class="col-reid">REID</th>
-            <th class="col-nianci">NIANCI</th>
-            <th>DAY</th>
-          </tr>
-        </thead>
-        <tbody id="history-body">
-          <tr><td colspan="4" class="loading-cell">LOADING<span class="blink">…</span></td></tr>
-        </tbody>
-      </table>
+      <div class="hist-head">
+        <span class="hist-rank">#</span>
+        <span class="hist-date">DATE</span>
+        <span class="hist-games col-reid">REID</span>
+        <span class="hist-games col-nianci">NIANCI</span>
+        <span class="hist-day">DAY</span>
+      </div>
+      <div id="history-scroll">
+        <div id="history-ticker">
+          <div class="loading-cell">LOADING<span class="blink">…</span></div>
+        </div>
+      </div>
     </section>
 
   </main>
