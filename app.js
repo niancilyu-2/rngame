@@ -222,10 +222,10 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatDate(iso) {
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-  });
+function formatDate(iso, includeYear = false) {
+  const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+  if (includeYear) opts.year = 'numeric';
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', opts);
 }
 
 // ── Score formatting ──────────────────────────────────────────────────────────
@@ -495,7 +495,7 @@ function renderHistory(byDate) {
     div.className = `hist-row${dayWinner ? ' hist-' + dayWinner : ''}`;
     div.innerHTML = `
       <span class="hist-rank">${String(i + 1).padStart(2, '0')}</span>
-      <span class="hist-date">${formatDate(date)}</span>
+      <span class="hist-date">${formatDate(date, true)}</span>
       <span class="hist-games col-reid">${reidGames.join(' · ') || '—'}</span>
       <span class="hist-games col-nianci">${nianciGames.join(' · ') || '—'}</span>
       <span class="hist-day">${resultCell(dayWinner)}</span>`;
@@ -522,8 +522,8 @@ function renderHistory(byDate) {
     </div>
     <div class="htotal-vs">VS</div>
     <div class="htotal nianci ${leader === 'nianci' ? 'leader' : ''}">
-      <span class="htotal-num">${nianciDays}</span>
       <span class="htotal-name">NIANCI</span>
+      <span class="htotal-num">${nianciDays}</span>
     </div>`;
 }
 
