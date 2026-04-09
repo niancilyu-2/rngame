@@ -54,6 +54,18 @@ const GAME_FALLBACK = [
 // Win rules per game — ordered list applied by determineWinner().
 // To add a new game: add an entry here. 'get' extracts the value from a score row.
 // type: 'lower' (lower wins), 'higher' (higher wins), 'true' (true beats false)
+const TAUNTS = [
+  'SKILL ISSUE',
+
+  'YOU ARE COOKED',
+  'GET REKT',
+  'TOO EASY',
+  'I MISS U :3',
+  'TRY HARDER',
+  'I LOVE YA',
+  'HI BB',
+];
+
 const WIN_RULES = {
   redactle: [
     { type: 'lower', get: r => r.details?.words_guessed },
@@ -223,9 +235,10 @@ function today() {
 }
 
 function formatDate(iso, includeYear = false) {
-  const opts = { weekday: 'short', month: 'short', day: 'numeric' };
-  if (includeYear) opts.year = 'numeric';
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', opts);
+  const date = new Date(iso + 'T00:00:00');
+  const base = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  if (!includeYear) return base;
+  return `${base} <span class="hist-year">${date.getFullYear()}</span>`;
 }
 
 // ── Score formatting ──────────────────────────────────────────────────────────
@@ -263,7 +276,9 @@ function scoreSummary(row) {
 // ── Win determination ─────────────────────────────────────────────────────────
 
 function determineWinner(gameId, reid, nianci) {
-  if (!reid || !nianci) return null;
+  if (!reid && !nianci) return null;
+  if (reid && !nianci) return 'reid';
+  if (nianci && !reid) return 'nianci';
   const rules = WIN_RULES[gameId];
   if (!rules) return null;
 
@@ -282,6 +297,10 @@ function determineWinner(gameId, reid, nianci) {
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
+
+function pickTaunt() {
+  return TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+}
 
 function resultCell(winner) {
   if (winner === 'tie')  return `<span class="result-tie">TIE</span>`;
@@ -367,6 +386,18 @@ function renderLeaderboard(scoresByGame) {
   } else {
     banner.textContent = `★ ALL TIED UP ${reidWins}–${nianciWins} ★`;
     banner.classList.add('winner-tie');
+  }
+
+  // Speech bubble between winning card and VS badge when lead >= 2
+  document.querySelectorAll('.taunt-bubble').forEach(b => b.remove());
+  const lead = Math.abs(reidWins - nianciWins);
+  if (lead >= 2) {
+    const winner = reidWins > nianciWins ? 'reid' : 'nianci';
+    const bubble = document.createElement('div');
+    bubble.className = `taunt-bubble ${winner}`;
+    bubble.textContent = pickTaunt();
+    const card = document.querySelector(`.player-card.${winner}`);
+    card.appendChild(bubble);
   }
 }
 
