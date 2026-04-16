@@ -281,7 +281,10 @@ function determineWinner(gameId, reid, nianci) {
   if (reid && !nianci) return 'reid';
   if (nianci && !reid) return 'nianci';
   const rules = WIN_RULES[gameId];
-  if (!rules) return null;
+  if (!rules) {
+    console.warn(`No win rules for game: ${gameId}`);
+    return null;
+  }
 
   for (const rule of rules) {
     const r = rule.get(reid);
@@ -444,9 +447,13 @@ async function loadConfig() {
       cfg = fallback?.ui_config ?? {};
     }
     const fallback = GAME_FALLBACK.find(f => f.id === g.id);
-    if (fallback && cfg?.extra_fields) {
-      const allowed = new Set(fallback.ui_config.extra_fields.map(f => f.name));
-      cfg.extra_fields = cfg.extra_fields.filter(f => allowed.has(f.name));
+    if (cfg?.extra_fields) {
+      if (fallback) {
+        const allowed = new Set(fallback.ui_config.extra_fields.map(f => f.name));
+        cfg.extra_fields = cfg.extra_fields.filter(f => allowed.has(f.name));
+      } else {
+        cfg.extra_fields = [];
+      }
     }
     return { ...g, ui_config: cfg };
   });
@@ -494,7 +501,8 @@ async function loadHistory() {
   const { data, error } = await db
     .from('scores')
     .select('*')
-    .order('played_date', { ascending: false });
+    .order('played_date', { ascending: false })
+    .limit(200);
 
   if (error || !data) return;
 
@@ -607,7 +615,8 @@ function openGame(gameId) {
     }
   };
 
-  loadTimer = setTimeout(() => showBlocked(url), 8000);
+  const IFRAME_LOAD_TIMEOUT = 8000;
+  loadTimer = setTimeout(() => showBlocked(url), IFRAME_LOAD_TIMEOUT);
   frame.src = url;
 }
 
@@ -749,8 +758,9 @@ function applyParsed(game, parsed) {
 let activeGame = null;
 
 function openModal(gameId) {
-  activeGame = gameId;
   const game = GAME_CONFIG.find(g => g.id === gameId);
+  if (!game) return;
+  activeGame = gameId;
   const cfg  = game?.ui_config ?? {};
 
   document.getElementById('modal-title').textContent = `LOG — ${game?.name?.toUpperCase() ?? gameId}`;
@@ -832,13 +842,18 @@ async function submitScore(event) {
     row.details = {};
     for (const field of extraFields) {
       const val = form[field.name]?.value;
-      if (val != null && val !== '') row.details[field.name] = Number(val);
+      if (val == null || val === '') continue;
+      const num = Number(val);
+      if (isNaN(num)) { showError(errEl, `${game?.name?.toUpperCase()}: ${field.label} MUST BE A NUMBER`); return; }
+      if (field.min != null && num < field.min) { showError(errEl, `${game?.name?.toUpperCase()}: ${field.label} MUST BE >= ${field.min}`); return; }
+      if (field.max != null && num > field.max) { showError(errEl, `${game?.name?.toUpperCase()}: ${field.label} MUST BE <= ${field.max}`); return; }
+      row.details[field.name] = num;
     }
   }
 
   // Redactle validation
   if (activeGame === 'redactle' && !row.details?.words_guessed) {
-    showError(errEl, 'WORDS GUESSED REQUIRED'); return;
+    showError(errEl, 'REDACTLE: WORDS GUESSED REQUIRED'); return;
   }
 
   if (!db) { showError(errEl, 'SCORE SAVING UNAVAILABLE'); return; }
