@@ -1,6 +1,3 @@
-// ABOUTME: Main app logic — pixel art avatars, score rendering, iframe game loader,
-// ABOUTME: and score entry modal backed by Supabase.
-
 // Game config loaded from DB (or fallback). Set by loadConfig().
 let GAME_CONFIG = [];
 
@@ -210,18 +207,21 @@ function drawSprite(canvasEl, sprite, palette) {
   }
 }
 
+let avatarInterval = null;
+
 function initAvatars() {
   const reidCanvas   = document.createElement('canvas');
   const nianciCanvas = document.createElement('canvas');
   document.getElementById('avatar-reid').appendChild(reidCanvas);
   document.getElementById('avatar-nianci').appendChild(nianciCanvas);
 
-  // Alternate between 2 frames at ~3fps for an idle animation
   let frame = 0;
   drawSprite(reidCanvas, REID_F1, REID_PALETTE);
   drawSprite(nianciCanvas, NIANCI_F1, NIANCI_PALETTE);
 
-  setInterval(() => {
+  if (avatarInterval) clearInterval(avatarInterval);
+  avatarInterval = setInterval(() => {
+    if (document.hidden) return;
     frame = 1 - frame;
     drawSprite(reidCanvas,   frame ? REID_F2   : REID_F1,   REID_PALETTE);
     drawSprite(nianciCanvas, frame ? NIANCI_F2 : NIANCI_F1, NIANCI_PALETTE);
@@ -231,7 +231,8 @@ function initAvatars() {
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  return d;
 }
 
 function formatDate(iso, includeYear = false) {
@@ -434,10 +435,21 @@ async function loadConfig() {
   GAME_CONFIG = (!error && data?.length) ? data : GAME_FALLBACK;
 
   // ui_config comes back as a string from Supabase if not parsed
-  GAME_CONFIG = GAME_CONFIG.map(g => ({
-    ...g,
-    ui_config: typeof g.ui_config === 'string' ? JSON.parse(g.ui_config) : g.ui_config,
-  }));
+  GAME_CONFIG = GAME_CONFIG.map(g => {
+    let cfg;
+    try {
+      cfg = typeof g.ui_config === 'string' ? JSON.parse(g.ui_config) : g.ui_config;
+    } catch (e) {
+      const fallback = GAME_FALLBACK.find(f => f.id === g.id);
+      cfg = fallback?.ui_config ?? {};
+    }
+    const fallback = GAME_FALLBACK.find(f => f.id === g.id);
+    if (fallback && cfg?.extra_fields) {
+      const allowed = new Set(fallback.ui_config.extra_fields.map(f => f.name));
+      cfg.extra_fields = cfg.extra_fields.filter(f => allowed.has(f.name));
+    }
+    return { ...g, ui_config: cfg };
+  });
 
   renderGameTiles();
 }
@@ -501,7 +513,6 @@ async function loadHistory() {
 function renderHistory(byDate) {
   const ticker = document.getElementById('history-ticker');
   ticker.innerHTML = '';
-  ticker.classList.remove('scrolling');
 
   let reidDays = 0, nianciDays = 0;
   const dates = Object.keys(byDate).sort().reverse();
@@ -539,11 +550,6 @@ function renderHistory(byDate) {
 
   if (rowEls.length === 0) {
     ticker.innerHTML = '<div class="loading-cell">NO HISTORY YET</div>';
-  } else if (rowEls.length > 4) {
-    // Duplicate rows for seamless infinite scroll
-    rowEls.forEach(r => ticker.appendChild(r.cloneNode(true)));
-    ticker.style.animationDuration = `${rowEls.length * 2.5}s`;
-    ticker.classList.add('scrolling');
   }
 
   const leader = reidDays > nianciDays ? 'reid'
@@ -732,7 +738,7 @@ function applyParsed(game, parsed) {
     resultEl.textContent = '✕ COULD NOT PARSE — FILL MANUALLY';
     resultEl.className   = 'error';
   } else {
-    resultEl.innerHTML = '✓ PARSED: ' + lines.join(' · ');
+    resultEl.textContent = '✓ PARSED: ' + lines.join(' · ');
     resultEl.className = '';
   }
   resultEl.classList.remove('hidden');
@@ -835,7 +841,7 @@ async function submitScore(event) {
     showError(errEl, 'WORDS GUESSED REQUIRED'); return;
   }
 
-  if (!db) { showError(errEl, 'SUPABASE NOT CONFIGURED'); return; }
+  if (!db) { showError(errEl, 'SCORE SAVING UNAVAILABLE'); return; }
 
   const { error } = await db
     .from('scores')

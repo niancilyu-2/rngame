@@ -691,27 +691,11 @@ section h2 {
 .hist-games { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 #history-scroll {
-  height: 300px;
-  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
   border: 1px solid var(--border);
   background: var(--bg);
   position: relative;
-}
-#history-scroll::before, #history-scroll::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  height: 48px;
-  z-index: 1;
-  pointer-events: none;
-}
-#history-scroll::before { top: 0;    background: linear-gradient(var(--bg), transparent); }
-#history-scroll::after  { bottom: 0; background: linear-gradient(transparent, var(--bg)); }
-#history-ticker.scrolling { animation: arcade-roll linear infinite; }
-#history-scroll:hover #history-ticker { animation-play-state: paused; }
-@keyframes arcade-roll {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
 }
 
 /* ── Mobile ── */
