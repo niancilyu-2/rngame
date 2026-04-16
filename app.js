@@ -9,7 +9,7 @@ const GAME_FALLBACK = [
     url: 'https://redactle.net/', embeddable: true,
     difficulty_label: 'MEDIUM', sort_order: 1,
     ui_config: {
-      has_time: true, has_completion: false, has_share_paste: true,
+      has_time: true, has_completion: true, has_share_paste: true,
       extra_fields: [
         { name: 'words_guessed', label: 'WORDS GUESSED', input_type: 'number', min: 1 },
       ],
