@@ -65,6 +65,7 @@ const TAUNTS = [
 
 const WIN_RULES = {
   redactle: [
+    { type: 'true',  get: r => r.completed },
     { type: 'lower', get: r => r.details?.words_guessed },
     { type: 'lower', get: r => r.time_seconds },
   ],
