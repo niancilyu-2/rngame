@@ -519,7 +519,11 @@ async function loadHistory() {
   renderHistory(byDate);
 }
 
+let HISTORY_DATA = null;
+let historyHoverAttached = false;
+
 function renderHistory(byDate) {
+  HISTORY_DATA = byDate;
   const ticker = document.getElementById('history-ticker');
   ticker.innerHTML = '';
 
@@ -547,6 +551,7 @@ function renderHistory(byDate) {
 
     const div = document.createElement('div');
     div.className = `hist-row${dayWinner ? ' hist-' + dayWinner : ''}`;
+    div.dataset.date = date;
     div.innerHTML = `
       <span class="hist-rank">${String(i + 1).padStart(2, '0')}</span>
       <span class="hist-date">${formatDate(date, true)}</span>
@@ -559,6 +564,8 @@ function renderHistory(byDate) {
 
   if (rowEls.length === 0) {
     ticker.innerHTML = '<div class="loading-cell">NO HISTORY YET</div>';
+  } else {
+    attachHistoryHover();
   }
 
   const leader = reidDays > nianciDays ? 'reid'
@@ -574,6 +581,99 @@ function renderHistory(byDate) {
       <span class="htotal-name">NIANCI</span>
       <span class="htotal-num">${nianciDays}</span>
     </div>`;
+}
+
+// ── History detail tooltip ────────────────────────────────────────────────────
+
+function ensureHistTooltip() {
+  let tt = document.getElementById('hist-tooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.id = 'hist-tooltip';
+    tt.className = 'hidden';
+    document.body.appendChild(tt);
+  }
+  return tt;
+}
+
+function buildHistDetailHTML(date, gameScores) {
+  const rows = GAME_CONFIG.map(game => {
+    const scores = gameScores[game.id];
+    if (!scores) return '';
+    const winner = determineWinner(game.id, scores.reid, scores.nianci);
+    const rClass = winner === 'reid'   ? 'ht-win' : winner === 'nianci' ? 'ht-loss' : '';
+    const nClass = winner === 'nianci' ? 'ht-win' : winner === 'reid'   ? 'ht-loss' : '';
+    return `<div class="ht-row">
+      <span class="ht-game">${game.name.toUpperCase()}</span>
+      <span class="ht-score col-reid ${rClass}">${scoreSummary(scores.reid)}</span>
+      <span class="ht-score col-nianci ${nClass}">${scoreSummary(scores.nianci)}</span>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  return `<div class="ht-head">
+      <span class="ht-head-date">${formatDate(date, true)}</span>
+      <span class="ht-head-cols"><span class="col-reid">P1</span> <span class="col-nianci">P2</span></span>
+    </div>
+    ${rows || '<div class="ht-empty">NO SCORES</div>'}`;
+}
+
+function positionHistTooltip(tt, row) {
+  const rect = row.getBoundingClientRect();
+  const ttRect = tt.getBoundingClientRect();
+  const pad = 8;
+
+  let left = rect.right + pad;
+  if (left + ttRect.width > window.innerWidth - pad) {
+    left = rect.left - ttRect.width - pad;
+  }
+  if (left < pad) left = pad;
+
+  let top = rect.top + (rect.height - ttRect.height) / 2;
+  if (top < pad) top = pad;
+  if (top + ttRect.height > window.innerHeight - pad) {
+    top = window.innerHeight - ttRect.height - pad;
+  }
+
+  tt.style.left = `${left}px`;
+  tt.style.top  = `${top}px`;
+}
+
+function showHistDetail(row) {
+  const date = row.dataset.date;
+  const gameScores = HISTORY_DATA?.[date];
+  if (!gameScores) return;
+
+  const tt = ensureHistTooltip();
+  tt.innerHTML = buildHistDetailHTML(date, gameScores);
+  tt.classList.remove('hidden');
+  positionHistTooltip(tt, row);
+}
+
+function hideHistDetail() {
+  document.getElementById('hist-tooltip')?.classList.add('hidden');
+}
+
+function attachHistoryHover() {
+  if (historyHoverAttached) return;
+  historyHoverAttached = true;
+
+  const ticker = document.getElementById('history-ticker');
+  let currentRow = null;
+
+  ticker.addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.hist-row');
+    if (!row || row === currentRow) return;
+    currentRow = row;
+    showHistDetail(row);
+  });
+  ticker.addEventListener('mouseleave', () => {
+    currentRow = null;
+    hideHistDetail();
+  });
+  document.getElementById('history-scroll').addEventListener('scroll', () => {
+    currentRow = null;
+    hideHistDetail();
+  });
 }
 
 // ── Game iframe overlay ───────────────────────────────────────────────────────

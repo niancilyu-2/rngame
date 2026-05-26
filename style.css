@@ -698,6 +698,43 @@ section h2 {
   position: relative;
 }
 
+#hist-tooltip {
+  position: fixed;
+  z-index: 1000;
+  min-width: 14rem;
+  max-width: min(22rem, 92vw);
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 2px solid var(--yellow);
+  box-shadow: 0 0 14px rgba(255, 204, 0, 0.35), 0 4px 18px rgba(0, 0, 0, 0.6);
+  font-size: 0.36rem;
+  color: var(--text);
+  pointer-events: none;
+}
+.ht-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--yellow);
+}
+.ht-head-cols { display: flex; gap: 0.75rem; color: var(--muted); }
+.ht-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  align-items: center;
+}
+.ht-game { color: var(--muted); letter-spacing: 1px; }
+.ht-score { white-space: nowrap; text-align: right; min-width: 4.5rem; }
+.ht-score.ht-win  { text-shadow: 0 0 6px currentColor; }
+.ht-score.ht-loss { opacity: 0.55; }
+.ht-empty { color: var(--muted); text-align: center; padding: 0.4rem 0; }
+
 /* ── Mobile ── */
 @media (max-width: 600px) {
   /* Header */
